@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión Inmobiliaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-active {
+            background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+            color: white;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .dark {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .dark .bg-white {
+            background-color: #2d3748 !important;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0 !important;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0 !important;
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 transition-colors duration-300">
+    <!-- Toast Notification -->
+    <div id="toast" class="toast bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <span id="toast-message">Operación exitosa</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Inmobiliaria Nombre</h1>
+                        <p class="text-sm text-gray-500">Sistema de Gestión Integral</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-medium">A</span>
+                        </div>
+                        <span class="text-gray-700 font-medium">Admin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6">
+            <div class="flex space-x-8 overflow-x-auto">
+                <button class="tab-btn tab-active px-4 py-3 font-medium rounded-t-lg whitespace-nowrap" data-tab="dashboard">
+                    📊 Dashboard
+                </button>
+                <button class="tab-btn px-4 py-3 font-medium text-gray-600 hover:text-cyan-600 rounded-t-lg whitespace-nowrap" data-tab="propiedades">
+                    🏠 Propiedades
+                </button>
+                <button class="tab-btn px-4 py-3 font-medium text-gray-600 hover:text-cyan-600 rounded-t-lg whitespace-nowrap" data-tab="pagos">
+                    💰 Pagos
+                </button>
+                <button class="tab-btn px-4 py-3 font-medium text-gray-600 hover:text-cyan-600 rounded-t-lg whitespace-nowrap" data-tab="reportes">
+                    📈 Reportes
+                </button>
+                <button class="tab-btn px-4 py-3 font-medium text-gray-600 hover:text-cyan-600 rounded-t-lg whitespace-nowrap" data-tab="calendario">
+                    📅 Calendario
+                </button>
+                <button class="tab-btn px-4 py-3 font-medium text-gray-600 hover:text-cyan-600 rounded-t-lg whitespace-nowrap" data-tab="importar">
+                    📤 Importar/Exportar
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Stats Cards -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Total Propiedades</p>
+                            <p class="text-3xl font-bold text-gray-800">24</p>
+                        </div>
+                        <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Inquilinos al Día</p>
+                            <p class="text-3xl font-bold text-teal-600">18</p>
+                        </div>
+                        <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Con Atrasos</p>
+                            <p class="text-3xl font-bold text-red-600">4</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Pago Parcial</p>
+                            <p class="text-3xl font-bold text-yellow-600">2</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Estado de Pagos</h3>
+                    <div class="relative h-64 flex items-center justify-center">
+                        <canvas id="paymentsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Próximos Vencimientos</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                            <div>
+                                <p class="font-medium text-gray-800">Av. Corrientes 1234</p>
+                                <p class="text-sm text-gray-600">ABL - Vence en 3 días</p>
+                            </div>
+                            <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Urgente</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div>
+                                <p class="font-medium text-gray-800">San Martín 567</p>
+                                <p class="text-sm text-gray-600">AYSA - Vence en 7 días</p>
+                            </div>
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Próximo</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div>
+                                <p class="font-medium text-gray-800">Rivadavia 890</p>
+                                <p class="text-sm text-gray-600">Expensas - Vence en 12 días</p>
+                            </div>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Normal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Propiedades Tab -->
+        <div id="propiedades" class="tab-content hidden">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Gestión de Propiedades</h2>
+                <button id="nueva-propiedad-btn" class="bg-cyan-600 text-white px-6 py-3 rounded-lg hover:bg-cyan-700 transition-colors font-medium">
+                    + Nueva Propiedad
+                </button>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" placeholder="Buscar por nombre, DNI, dirección..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                        <option>Todos los roles</option>
+                        <option>Inquilino</option>
+                        <option>Dueño</option>
+                        <option>Garante</option>
+                    </select>
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                        <option>Estado de pagos</option>
+                        <option>Al día</option>
+                        <option>Con atrasos</option>
+                        <option>Pago parcial</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Properties Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Property Card 1 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Av. Corrientes 1234</h3>
+                            <span class="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm">Al día</span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">Inquilino:</span>
+                                <span class="ml-2">Juan Pérez</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">DNI:</span>
+                                <span class="ml-2">12.345.678</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">Contrato:</span>
+                                <span class="ml-2">01/2024 - 12/2025</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-cyan-600 text-white py-2 px-4 rounded-lg hover:bg-cyan-700 transition-colors text-sm">
+                                Ver Detalles
+                            </button>
+                            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Property Card 2 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">San Martín 567</h3>
+                            <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Atraso</span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">Inquilino:</span>
+                                <span class="ml-2">María García</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">DNI:</span>
+                                <span class="ml-2">87.654.321</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">Contrato:</span>
+                                <span class="ml-2">06/2023 - 05/2025</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-cyan-600 text-white py-2 px-4 rounded-lg hover:bg-cyan-700 transition-colors text-sm">
+                                Ver Detalles
+                            </button>
+                            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Property Card 3 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Rivadavia 890</h3>
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Parcial</span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">Inquilino:</span>
+                                <span class="ml-2">Carlos López</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">DNI:</span>
+                                <span class="ml-2">45.678.912</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="font-medium">Contrato:</span>
+                                <span class="ml-2">03/2024 - 02/2026</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-cyan-600 text-white py-2 px-4 rounded-lg hover:bg-cyan-700 transition-colors text-sm">
+                                Ver Detalles
+                            </button>
+                            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagos Tab -->
+        <div id="pagos" class="tab-content hidden">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Sistema de Pagos</h2>
+                <div class="flex space-x-3">
+                    <button class="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors">
+                        Pago Anual ABL
+                    </button>
+                    <button class="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
+                        Actualizar Pagos
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payment Filters -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                        <option>Seleccionar propiedad</option>
+                        <option>Av. Corrientes 1234</option>
+                        <option>San Martín 567</option>
+                        <option>Rivadavia 890</option>
+                    </select>
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                        <option>Tipo de servicio</option>
+                        <option>ABL</option>
+                        <option>AYSA</option>
+                        <option>Metrogas</option>
+                        <option>EDENOR</option>
+                        <option>Expensas</option>
+                    </select>
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                        <option>Mes</option>
+                        <option>Enero 2024</option>
+                        <option>Febrero 2024</option>
+                        <option>Marzo 2024</option>
+                    </select>
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                        <option>Estado</option>
+                        <option>Pagado</option>
+                        <option>Pendiente</option>
+                        <option>Parcial</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Payment Table -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Propiedad</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ABL</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AYSA</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metrogas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EDENOR</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expensas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">Av. Corrientes 1234</div>
+                                    <div class="text-sm text-gray-500">Juan Pérez</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" checked class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" checked class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" checked class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" checked class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Parcial
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">San Martín 567</div>
+                                    <div class="text-sm text-gray-500">María García</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-cyan-600">
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Pendiente
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reportes Tab -->
+        <div id="reportes" class="tab-content hidden">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Reportes y Análisis</h2>
+                <div class="flex space-x-3">
+                    <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        📊 Reporte Excel
+                    </button>
+                    <button class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        📄 Reporte PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Filters -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                        <option>Período</option>
+                        <option>Último mes</option>
+                        <option>Últimos 3 meses</option>
+                        <option>Último año</option>
+                    </select>
+                    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                        <option>Tipo de reporte</option>
+                        <option>Resumen general</option>
+                        <option>Por servicio</option>
+                        <option>Por propiedad</option>
+                    </select>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Generar Reporte
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Pagos ABL</h3>
+                    <p class="text-3xl font-bold text-teal-600 mb-2">85%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-teal-600 h-2 rounded-full" style="width: 85%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Pagos AYSA</h3>
+                    <p class="text-3xl font-bold text-cyan-600 mb-2">92%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-cyan-600 h-2 rounded-full" style="width: 92%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Pagos Gas</h3>
+                    <p class="text-3xl font-bold text-cyan-600 mb-2">78%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-cyan-600 h-2 rounded-full" style="width: 78%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Pagos Luz</h3>
+                    <p class="text-3xl font-bold text-blue-500 mb-2">88%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: 88%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Report Table -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800">Detalle de Pagos - Marzo 2024</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Propiedades</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pagadas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pendientes</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">% Pagos</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">ABL</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-500">24</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-green-600">20</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-red-600">4</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">83%</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">AYSA</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-500">22</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-green-600">20</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-red-600">2</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">91%</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendario Tab -->
+        <div id="calendario" class="tab-content hidden">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-800">Calendario de Vencimientos</h2>
+                <div class="flex space-x-3">
+                    <button class="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
+                        ← Mes Anterior
+                    </button>
+                    <button class="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
+                        Mes Siguiente →
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800">Marzo 2024</h3>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="grid grid-cols-7 gap-2 mb-4">
+                    <div class="text-center font-semibold text-gray-600 py-2">Dom</div>
+                    <div class="text-center font-semibold text-gray-600 py-2">Lun</div>
+                    <div class="text-center font-semibold text-gray-600 py-2">Mar</div>
+                    <div class="text-center font-semibold text-gray-600 py-2">Mié</div>
+                    <div class="text-center font-semibold text-gray-600 py-2">Jue</div>
+                    <div class="text-center font-semibold text-gray-600 py-2">Vie</div>
+                    <div class="text-center font-semibold text-gray-600 py-2">Sáb</div>
+
+                    <!-- Calendar Days -->
+                    <div class="text-center py-3 text-gray-400">25</div>
+                    <div class="text-center py-3 text-gray-400">26</div>
+                    <div class="text-center py-3 text-gray-400">27</div>
+                    <div class="text-center py-3 text-gray-400">28</div>
+                    <div class="text-center py-3 text-gray-400">29</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">1</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">2</div>
+
+                    <div class="text-center py-3 border border-gray-200 rounded">3</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">4</div>
+                    <div class="text-center py-3 border border-gray-200 rounded bg-red-100 text-red-800 font-semibold">5</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">6</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">7</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">8</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">9</div>
+
+                    <div class="text-center py-3 border border-gray-200 rounded bg-yellow-100 text-yellow-800 font-semibold">10</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">11</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">12</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">13</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">14</div>
+                    <div class="text-center py-3 border border-gray-200 rounded bg-blue-100 text-blue-800 font-semibold">15</div>
+                    <div class="text-center py-3 border border-gray-200 rounded">16</div>
+                </div>
+
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-4 mt-6">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-100 border border-red-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Vencimiento urgente</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-yellow-100 border border-yellow-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Próximo vencimiento</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-100 border border-blue-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Vencimiento normal</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Importar/Exportar Tab -->
+        <div id="importar" class="tab-content hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Importación y Exportación</h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Export Section -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📤 Exportar Datos</h3>
+                    <div class="space-y-4">
+                        <button class="w-full bg-teal-600 text-white py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Exportar Excel Completo
+                        </button>
+                        <button class="w-full bg-cyan-600 text-white py-3 px-4 rounded-lg hover:bg-cyan-700 transition-colors flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Exportar PDF Reporte
+                        </button>
+                        <button class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            Exportar Solo Pagos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import Section -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📥 Importar Datos</h3>
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 mb-2">Arrastra tu archivo CSV aquí</p>
+                            <p class="text-sm text-gray-500 mb-4">o haz clic para seleccionar</p>
+                            <input type="file" accept=".csv" class="hidden" id="csv-upload">
+                            <button onclick="document.getElementById('csv-upload').click()" class="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
+                                Seleccionar Archivo
+                            </button>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 mb-2">Formato CSV Requerido:</h4>
+                            <p class="text-sm text-blue-700">
+                                direccion, inquilino, pagoABL_2024_3, pagoAYSA_2024_3, etc.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import History -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Historial de Importaciones</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archivo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registros</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/03/2024 14:30</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">pagos_marzo_2024.csv</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">24 propiedades</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Exitoso</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for New Property -->
+    <div id="nueva-propiedad-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-semibold text-gray-800">Nueva Propiedad</h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form class="space-y-6">
+                    <!-- Property Info -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Información de la Propiedad</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" placeholder="Dirección completa" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                            <input type="date" placeholder="Fecha inicio contrato" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                            <input type="date" placeholder="Fecha fin contrato" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+
+                    <!-- People Section -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Personas Asociadas</h4>
+                        <div class="space-y-4">
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="font-medium text-gray-700">Inquilino</h5>
+                                    <select class="border border-gray-300 rounded px-3 py-1 text-sm">
+                                        <option>Inquilino</option>
+                                        <option>Dueño</option>
+                                        <option>Garante</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <input type="text" placeholder="Nombre completo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <input type="text" placeholder="DNI" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <input type="email" placeholder="Email principal" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <input type="email" placeholder="Email alternativo" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <input type="tel" placeholder="WhatsApp" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <input type="tel" placeholder="Teléfono" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                </div>
+                                <textarea placeholder="Comentarios" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-3 focus:ring-2 focus:ring-cyan-500" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="mt-3 text-cyan-600 hover:text-cyan-700 text-sm font-medium">+ Agregar otra persona</button>
+                    </div>
+
+                    <!-- Services Section -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Servicios</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- ABL -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="font-medium text-gray-700">ABL</h5>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox">
+                                        <span class="ml-2 text-sm">No Aplica</span>
+                                    </label>
+                                </div>
+                                <div class="space-y-2">
+                                    <input type="text" placeholder="Número de partida (7 dígitos)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <input type="text" placeholder="Código adicional (2 dígitos)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <textarea placeholder="Comentarios ABL" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500" rows="2"></textarea>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox">
+                                        <span class="ml-2 text-sm">Pago anual</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- AYSA -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="font-medium text-gray-700">AYSA</h5>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="form-checkbox">
+                                        <span class="ml-2 text-sm">No Aplica</span>
+                                    </label>
+                                </div>
+                                <div class="space-y-2">
+                                    <input type="text" placeholder="Número de cliente/servicio" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500">
+                                    <textarea placeholder="Comentarios AYSA" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                        <button type="button" id="cancel-modal" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors">
+                            Guardar Propiedad
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funcionalidad de pestañas
+        (function() {
+            // Manejo de pestañas
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('tab-active');
+                        b.classList.add('text-gray-600', 'hover:text-cyan-600');
+                    });
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('text-gray-600', 'hover:text-cyan-600');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+
+            // Cambiar tema (claro/oscuro)
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark');
+                });
+            }
+
+            // Manejo del modal para nueva propiedad
+            const modal = document.getElementById('nueva-propiedad-modal');
+            const openModalBtn = document.getElementById('nueva-propiedad-btn');
+            const closeModalBtn = document.getElementById('close-modal');
+            const cancelModalBtn = document.getElementById('cancel-modal');
+            if (openModalBtn && modal) {
+                openModalBtn.addEventListener('click', () => {
+                    modal.classList.remove('hidden');
+                });
+            }
+            [closeModalBtn, cancelModalBtn].forEach(btn => {
+                if (btn && modal) {
+                    btn.addEventListener('click', () => {
+                        modal.classList.add('hidden');
+                    });
+                }
+            });
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Notificación tipo "toast"
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toast-message');
+                if (!toast || !toastMessage) return;
+                toastMessage.textContent = message;
+                toast.className = `toast ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg`;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // Inicializar gráfico de pagos
+            window.addEventListener('load', function() {
+                const canvas = document.getElementById('paymentsChart');
+                if (canvas && typeof Chart !== 'undefined') {
+                    const ctx = canvas.getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Al día', 'Con atrasos', 'Pago parcial'],
+                            datasets: [{
+                                data: [18, 4, 2],
+                                backgroundColor: ['#06B6D4', '#EF4444', '#F59E0B'],
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Ejemplo de interacción: muestra toast (evita duplicar listeners)
+            document.querySelectorAll('button').forEach(btn => {
+                if (!btn.classList.contains('tab-btn') && (!btn.id || !btn.id.includes('modal'))) {
+                    if (!btn.dataset.listenerAdded) {
+                        btn.addEventListener('click', () => {
+                            showToast('Función ejecutada correctamente');
+                        });
+                        btn.dataset.listenerAdded = 'true';
+                    }
+                }
+            });
+
+            // Envío del formulario de nueva propiedad
+            const form = document.querySelector('form');
+            if (form && modal) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    modal.classList.add('hidden');
+                    showToast('Propiedad creada exitosamente');
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
